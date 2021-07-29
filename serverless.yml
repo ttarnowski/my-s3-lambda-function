@@ -1,0 +1,59 @@
+service: my-s3-lambda-function
+frameworkVersion: "2"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  # custom region
+  region: eu-west-1
+
+  # access rights to AWS resources
+  iamRoleStatements:
+    # allow for read, write and update any files in tomasz-example-s3-bucket
+    - Effect: "Allow"
+      Action:
+        - "s3:GetObject"
+        - "s3:PutObject"
+      Resource:
+        # concatenate the following strings
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "tomasz-example-s3-bucket"
+            # "*" used as a wildcard means "any files"
+            - "/*"
+    # allow for list files on tomasz-example-s3-bucket
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "tomasz-example-s3-bucket"
+
+functions:
+  getUser:
+    handler: src/handlers.getUser
+    events:
+      - http:
+          # uuid is a custom and required path param (GET request for just /user won't work)
+          path: /user/{uuid}
+          method: get
+  postUser:
+    handler: src/handlers.postUser
+    events:
+      - http:
+          path: /user
+          method: post
+  putUser:
+    handler: src/handlers.putUser
+    events:
+      - http:
+          # only requests like PUT /user/some-random-uuid will work
+          path: /user/{uuid}
+          method: put
+
+plugins:
+  - serverless-plugin-typescript
